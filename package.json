@@ -1,0 +1,39 @@
+{
+  "name": "blog-saver",
+  "version": "2.1.1",
+  "description": "Scrape web articles (WeChat/Zhihu/Juejin etc.) and save as HTML + Markdown simultaneously. Supports offline image embedding.",
+  "main": "src/index.cjs",
+  "bin": {
+    "blog-saver": "src/index.cjs"
+  },
+  "scripts": {
+    "start": "node src/index.cjs",
+    "test": "node src/index.cjs --help",
+    "postinstall": "echo '[blog-saver] Please run: npx playwright install chromium'"
+  },
+  "keywords": [
+    "scraper",
+    "wechat",
+    "article",
+    "html",
+    "markdown",
+    "playwright",
+    "web-scraper"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "bugs": {
+    "url": ""
+  },
+  "homepage": "",
+  "dependencies": {
+    "playwright-core": "^1.50.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
