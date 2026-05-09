@@ -14,7 +14,6 @@ function parseArgs(argv) {
 
   const flags = {
     images: args.includes('--images') || args.includes('-i'),
-    help: args.includes('--help') || args.includes('-h'),
   };
 
   const outputIdx = Math.max(args.indexOf('--output'), args.indexOf('-o'));
@@ -41,9 +40,9 @@ function formatSize(bytes) {
 // ---- Main ----
 
 async function main() {
-  const { url, images, help, outputDir, tags } = parseArgs(process.argv);
+  const { url, images, outputDir, tags } = parseArgs(process.argv);
 
-  if (!url || help) {
+  if (!url) {
     console.error('Usage: blog-saver <url> [--images] [--output <dir>] [--tags "tag1, tag2"]');
     console.error('');
     console.error('Options:');
@@ -51,10 +50,9 @@ async function main() {
     console.error('                   Without this: images use CDN URLs (smaller, needs internet)');
     console.error('  --output, -o     Output directory (default: ./output)');
     console.error('  --tags, -t       Comma-separated tags (e.g. "CVE, Windows, privilege-escalation")');
-    console.error('  --help, -h       Show this help message');
     console.error('');
     console.error('Output: Saves both .html (for reading) and .md (for AI) simultaneously.');
-    process.exit(help ? 0 : 1);
+    process.exit(1);
   }
 
   fs.mkdirSync(outputDir, { recursive: true });
@@ -93,6 +91,6 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error(`\n[ERROR] ${err?.message || err}`);
+  console.error(`\n[ERROR] ${err.message}`);
   process.exit(1);
 });

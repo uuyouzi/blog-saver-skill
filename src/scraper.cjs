@@ -80,10 +80,7 @@ async function embedImagesAsBase64(page) {
   return await page.evaluate(async () => {
     const container = document.querySelector('#js_content')
       || document.querySelector('article')
-      || document.querySelector('.post-content')
-      || document.querySelector('.entry-content')
-      || document.querySelector('main')
-      || document.body;
+      || document.querySelector('main');
     if (!container) return { ok: 0, fail: 0 };
 
     const imgs = container.querySelectorAll('img');
@@ -92,8 +89,9 @@ async function embedImagesAsBase64(page) {
     for (const img of imgs) {
       let src = img.getAttribute('data-src') || img.src || '';
       if (!src || src.startsWith('data:')) continue;
-      // Skip tiny images (both dimensions < 50px: icons, tracking pixels)
-      if (img.offsetWidth < 50 && img.offsetHeight < 50) continue;
+      // Skip tiny images (icons, tracking pixels)
+      if (img.offsetWidth > 0 && img.offsetHeight > 0
+          && (img.offsetWidth < 50 || img.offsetHeight < 50)) continue;
       // Skip hidden/invisible images
       if (img.offsetWidth === 0 && img.offsetHeight === 0) continue;
       // Skip weixin tracking pixels
@@ -165,7 +163,7 @@ async function extractContentMarkdown(page) {
       || document.body;
 
     // Non-content element selectors
-    const skipSelector = '.rich_media_tool, .qr_code_pc, .profile_nickname_area, script, style';
+    const skipSelector = '.rich_media_tool, .qr_code_pc, .profile_nickname_area, script, style, .code-snippet__line-index';
 
     function convertNode(node) {
       if (node.nodeType === Node.TEXT_NODE) {
@@ -223,8 +221,18 @@ async function extractContentMarkdown(page) {
         }
 
         case 'pre': {
-          const codeEl = node.querySelector('code') || node;
-          let code = codeEl.innerText || codeEl.textContent || '';
+          // WeChat code-snippet uses multiple <code> children, each containing one line.
+          const codeEls = node.querySelectorAll(':scope > code');
+          let code;
+          if (codeEls.length > 1) {
+            code = Array.from(codeEls).map(c => {
+              let t = c.innerText || c.textContent || '';
+              return t.trim();
+            }).filter(l => l.length > 0).join('\n');
+          } else {
+            const codeEl = codeEls[0] || node;
+            code = codeEl.innerText || codeEl.textContent || '';
+          }
           code = code.split('\n').map(l => l.replace(/^>\s?/, '')).join('\n').trim();
           return '\n```\n' + code + '\n```\n';
         }
@@ -302,7 +310,7 @@ async function extractContentMarkdown(page) {
 // ---- Main Scrape Function ----
 
 async function scrape(url, options = {}) {
-  const { images = false } = options;
+  const { images = false, timeout = 30000 } = options;
 
   const browserPath = findBrowser();
   if (!browserPath) throw new Error('No browser found. Please install Microsoft Edge or Google Chrome.');
@@ -316,13 +324,7 @@ async function scrape(url, options = {}) {
   try {
     const page = await browser.newPage();
     console.log('  Opening page...');
-    try {
-      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
-    } catch (e) {
-      console.log('  (page still loading, continuing...)');
-      await page.waitForLoadState('domcontentloaded').catch(() => {});
-      await sleep(2000);
-    }
+    await page.goto(url, { waitUntil: 'networkidle', timeout });
     await sleep(images ? 5000 : 3000);
 
     // 1. Extract metadata

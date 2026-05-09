@@ -5,12 +5,11 @@ const path = require('path');
 
 function sanitizeFilename(name) {
   return (name || 'untitled')
-    .replace(/[\/\\:*?"<>|]/g, '-')
+    .replace(/[\/\\:*?"<>|,]/g, '-')
     .replace(/-+/g, '-')
-    .substring(0, 150)
     .replace(/^-+|-+$/g, '')
     .replace(/ {2,}/g, ' ')
-    .trim();
+    .substring(0, 150);
 }
 
 function detectPlatform(url) {
@@ -33,7 +32,7 @@ function buildHtml(data, options) {
   const { url, saveDate, tags } = options;
   const platform = detectPlatform(url);
 
-  const sourceLine = author
+  const sourceLine = (platform === '微信公众号' && author)
     ? `${platform}「${author}」`
     : platform;
 
@@ -127,6 +126,29 @@ function buildHtml(data, options) {
     .content ul, .content ol { padding-left: 24px; margin: 8px 0; }
     .content li { margin: 4px 0; }
     .content hr { border: none; border-top: 1px solid #eee; margin: 24px 0; }
+    /* WeChat code-snippet component */
+    .content .code-snippet__fix {
+      background: #f6f8fa; border-radius: 6px; margin: 16px 0;
+      border: 1px solid #eee; overflow: hidden;
+    }
+    .content .code-snippet__line-index {
+      display: none;
+    }
+    .content .code-snippet__fix pre.code-snippet__js {
+      background: transparent; border: none; border-radius: 0;
+      margin: 0; padding: 16px 20px; overflow-x: auto;
+      white-space: pre;
+    }
+    .content .code-snippet__fix pre.code-snippet__js code {
+      display: block;
+    }
+    .content .code-snippet__attr { color: #d73a49; }
+    .content .code-snippet__string { color: #032f62; }
+    .content .code-snippet__keyword { color: #d73a49; }
+    .content .code-snippet__comment { color: #6a737d; font-style: italic; }
+    .content .code-snippet__number { color: #005cc5; }
+    .content .code-snippet__meta { color: #e36209; }
+    .content .code-snippet_outer { }
     .footer {
       margin-top: 32px; padding-top: 16px; border-top: 1px solid #eee;
       font-size: 13px; color: #999; text-align: center;
@@ -166,7 +188,7 @@ function buildMarkdown(data, options) {
   const { url, saveDate, tags } = options;
   const platform = detectPlatform(url);
 
-  const sourceLine = author
+  const sourceLine = (platform === '微信公众号' && author)
     ? `${platform}「${author}」`
     : platform;
 
@@ -187,21 +209,19 @@ function buildMarkdown(data, options) {
 function saveHtml(data, options) {
   const { url, saveDate, outputDir, tags } = options;
   const safeTitle = sanitizeFilename(data.title);
-  const filename = `${saveDate}_${safeTitle}`;
   const html = buildHtml(data, { url, saveDate, tags });
-  const htmlPath = path.join(outputDir, filename + '.html');
+  const htmlPath = path.join(outputDir, safeTitle + '.html');
   fs.writeFileSync(htmlPath, html, 'utf-8');
-  return { htmlPath, safeTitle: filename };
+  return { htmlPath, safeTitle };
 }
 
 function saveMarkdown(data, options) {
   const { url, saveDate, outputDir, tags } = options;
   const safeTitle = sanitizeFilename(data.title);
-  const filename = `${saveDate}_${safeTitle}`;
   const md = buildMarkdown(data, { url, saveDate, tags });
-  const mdPath = path.join(outputDir, filename + '.md');
+  const mdPath = path.join(outputDir, safeTitle + '.md');
   fs.writeFileSync(mdPath, md, 'utf-8');
-  return { mdPath, safeTitle: filename };
+  return { mdPath, safeTitle };
 }
 
 module.exports = { sanitizeFilename, detectPlatform, buildHtml, saveHtml, buildMarkdown, saveMarkdown };
